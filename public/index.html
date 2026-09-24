@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CandleStack ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #fafaf9; --ink: #141414; --muted: #686868; --rule: #e7e5e2; --soft: #f1f0ee;
+    --accent: #0f766e; --warn: #a15c07; --up: #0f766e; --down: #b42318; --none: #d6d3cf;
+    --grid: rgb(28 25 23 / 0.10);
+    --panel: rgb(250 250 249 / 0.94);
+    --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d0f11; --ink: #ecedee; --muted: #9ba1a6; --rule: #23272b; --soft: #16191c;
+      --accent: #3cc7a6; --warn: #e8b45a; --up: #3cc7a6; --down: #f0616d; --none: #2c3136;
+      --grid: rgb(230 232 234 / 0.045);
+      --panel: rgb(13 15 17 / 0.92);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d0f11; --ink: #ecedee; --muted: #9ba1a6; --rule: #23272b; --soft: #16191c;
+    --accent: #3cc7a6; --warn: #e8b45a; --up: #3cc7a6; --down: #f0616d; --none: #2c3136;
+    --grid: rgb(230 232 234 / 0.045);
+    --panel: rgb(13 15 17 / 0.92);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .page {
+    width: min(688px, 100% - 32px);
+    margin: 0 auto;
+    padding: 56px 24px 88px;
+    min-height: 100vh;
+    background: var(--panel);
+    border-inline: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .mono { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-weight: 600; letter-spacing: -0.01em; }
+  .brand span { color: var(--muted); font-weight: 400; }
+  nav { display: flex; gap: 20px; align-items: center; font-size: 15px; color: var(--muted); }
+  .theme {
+    border: 1px solid var(--rule); background: none; color: var(--muted);
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: grid; place-items: center;
+  }
+  .theme:hover { color: var(--ink); }
+
+  .title { display: flex; flex-direction: column; gap: 10px; }
+  .title h1 { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+  .overall { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); }
+
+  section { display: flex; flex-direction: column; }
+  h2 {
+    margin: 0 0 10px; font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); font-family: var(--mono);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+    align-items: center;
+  }
+  .row:last-child { border-bottom: 1px solid var(--rule); }
+  .name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .name b { font-weight: 500; }
+  /* Hosts stay on one line; the widest, pr-<N>-preview.candlestack.tech, is 224px. */
+  .name small { color: var(--muted); font-family: var(--mono); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); flex: none; }
+  .dot.warn { background: var(--warn); }
+  .dot.down { background: var(--down); }
+  .dot.unknown { background: var(--none); }
+  .state { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+  .state.up { color: var(--up); }
+  .state.warn { color: var(--warn); }
+  .state.down { color: var(--down); }
+  .state.unknown { color: var(--muted); }
+
+  .svc { display: flex; flex-direction: column; gap: 8px; }
+  .svc-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .facts { display: flex; gap: 14px; color: var(--muted); flex-wrap: wrap; }
+  .days { display: grid; grid-template-columns: repeat(30, 1fr); gap: 2px; height: 18px; }
+  .days i { background: var(--up); opacity: 0.8; border-radius: 1px; }
+  .days i.none { background: var(--none); opacity: 1; }
+  .days i.warn { background: var(--warn); opacity: 1; }
+  .days i.down { background: var(--down); opacity: 1; }
+  .days-legend { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+
+  .metric { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 14px; align-items: center; }
+  .bar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .bar span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .bar span.warn { background: var(--warn); }
+  .metric-head { display: flex; justify-content: space-between; gap: 12px; }
+  svg.spark { width: 96px; height: 28px; display: block; overflow: visible; }
+  svg.spark path.line { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+  svg.spark path.area { fill: var(--accent); opacity: 0.1; stroke: none; }
+  svg.spark circle { fill: var(--accent); }
+
+  .table { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 0; border-top: 1px solid var(--rule); white-space: nowrap; }
+  th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-top: none; padding-top: 0; }
+  td + td, th + th { padding-left: 16px; }
+  td.num, th.num { text-align: right; }
+  tr:last-child td { border-bottom: 1px solid var(--rule); }
+  .env { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .events { margin: 0; padding: 0; list-style: none; }
+  .empty { margin: 0; padding: 12px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); color: var(--muted); }
+  footer { color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 560px) {
+    .page { width: 100%; padding: 32px 16px 64px; gap: 40px; border-inline: none; }
+    .title h1 { font-size: 28px; }
+    .row { grid-template-columns: 1fr; gap: 8px; }
+    nav { gap: 14px; }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <span class="brand">CandleStack <span>ops</span></span>
+    <nav aria-label="Environments">
+      <a href="https://app.candlestack.tech">app ↗</a>
+      <a href="https://stage.candlestack.tech">stage ↗</a>
+      <button class="theme" id="theme" type="button" aria-label="Switch theme">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5v11a5.5 5.5 0 0 1 0-11Z" fill="currentColor"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <div class="title">
+    <h1 id="headline">Loading…</h1>
+    <p class="overall"><span class="dot unknown" id="overall-dot"></span><span class="mono" id="overall-text"></span></p>
+  </div>
+
+  <section aria-labelledby="h-env">
+    <h2 id="h-env">Environments</h2>
+    <div id="envs"></div>
+  </section>
+
+  <section aria-labelledby="h-ext">
+    <h2 id="h-ext">External sources</h2>
+    <div id="sources"></div>
+  </section>
+
+  <section aria-labelledby="h-vm">
+    <h2 id="h-vm">Server</h2>
+    <div id="server"></div>
+  </section>
+
+  <section aria-labelledby="h-ct">
+    <h2 id="h-ct">Containers</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>Name</th><th>Env</th><th class="num">CPU</th><th class="num">Memory</th><th class="num hide-sm">Up</th></tr></thead>
+        <tbody id="containers"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ev">
+    <h2 id="h-ev">Recent events · automatic</h2>
+    <ul class="events" id="events"></ul>
+  </section>
+
+  <footer>
+    <span id="footer-left">Checked every minute from Cloudflare · history kept 35 days</span>
+    <a class="mono" href="https://github.com/CandleStack-FEI-STU/ops">CandleStack-FEI-STU/ops ↗</a>
+  </footer>
+</div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

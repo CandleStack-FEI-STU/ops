@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "sampled_at": 1790266811,
+  "host": {
+    "label": "AWS t3.small · eu-north-1",
+    "cpus": 2,
+    "uptime": 71018.74,
+    "cpu": 3.8,
+    "load": 0.25,
+    "mem_used": 715157504,
+    "mem_total": 2004209664,
+    "disk_used": 4237748736,
+    "disk_total": 25821052928
+  },
+  "containers": [
+    { "name": "app", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664 },
+    { "name": "app", "env": "stage", "state": "running", "up": "26 minutes", "cpu": 0.1, "mem": 12824768 },
+    { "name": "caddy", "env": "edge", "state": "running", "up": "3 hours", "cpu": 0.2, "mem": 21809856 },
+    { "name": "agent", "env": "agent", "state": "running", "up": "26 minutes", "cpu": 0.3, "mem": 19697664 },
+    { "name": "socket-proxy", "env": "agent", "state": "running", "up": "26 minutes", "cpu": null, "mem": null },
+    { "name": "app", "env": "pr-5", "state": "running", "up": "4 minutes", "cpu": 0.0, "mem": 11046592 }
+  ],
+  "previews": [
+    { "env": "pr-5", "ok": true, "ms": 2, "version": "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+  ]
+}
