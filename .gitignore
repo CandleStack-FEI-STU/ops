@@ -1,0 +1,9 @@
+node_modules/
+# wrangler deploy --dry-run output and local state
+dist/
+.wrangler/
+# local secrets for wrangler dev
+.dev.vars*
+.env*
+# crash dumps
+*.stackdump
