@@ -1,17 +1,25 @@
 // GET /api/status: everything the page shows, read in one D1 batch.
 
-import { INTERVAL, RETENTION_DAYS, type Event, type TargetState } from "./checks";
+import { INTERVAL, localDay, type Event, type TargetState } from "./checks";
 import type { Container, HostMetrics, Snapshot } from "./snapshot";
 import { isPreview, previewNumber, targetName } from "./targets";
 
 type State = "up" | "warn" | "down" | "unknown";
 
 export interface Day {
-  /** YYYY-MM-DD, UTC. */
+  /** YYYY-MM-DD, a calendar day in Bratislava. */
   date: string;
   checks: number;
-  failed: number;
-  mark: "none" | "up" | "warn" | "down";
+  /** Minutes of outage (two or more failed checks in a row). */
+  down: number;
+  mark: "none" | "up" | "outage";
+}
+
+export interface Outage {
+  started: number;
+  /** Null while it lasts. */
+  ended: number | null;
+  detail: string | null;
 }
 
 export interface TargetStatus {
@@ -29,12 +37,13 @@ export interface TargetStatus {
 export interface EnvironmentStatus extends TargetStatus {
   uptime30: number | null;
   days: Day[];
+  /** Outages that touch the last 30 days, oldest first. */
+  outages: Outage[];
 }
 
 export interface Status {
   now: number;
   interval: number;
-  retention_days: number;
   /** When the cron last ran; null before the first run. */
   last_check: number | null;
   environments: EnvironmentStatus[];
@@ -69,7 +78,7 @@ interface DayRow {
   target: string;
   day: number;
   checks: number;
-  failed: number;
+  down: number;
 }
 
 const HOSTS: Record<string, string> = {
@@ -97,54 +106,57 @@ function targetStatus(id: string, row: TargetState | undefined): TargetStatus {
   };
 }
 
-/** Under 5 failed minutes in a day is a short outage, more is an outage. */
-function mark(checks: number, failed: number): Day["mark"] {
-  if (!checks) return "none";
-  if (!failed) return "up";
-  return failed < 5 ? "warn" : "down";
-}
-
 function days(rows: DayRow[], today: number): Day[] {
   const byDay = new Map(rows.map((r) => [r.day, r]));
   return Array.from({ length: 30 }, (_, i) => {
     const day = today - 29 + i;
     const row = byDay.get(day);
     const checks = row?.checks ?? 0;
-    const failed = row?.failed ?? 0;
+    // An outage that started the minute before midnight counts that minute on the new day.
+    const down = Math.min(row?.down ?? 0, checks);
     return {
-      date: new Date(day * 86400 * 1000).toISOString().slice(0, 10),
+      date: new Date(day * 86_400_000).toISOString().slice(0, 10),
       checks,
-      failed,
-      mark: mark(checks, failed),
+      down,
+      mark: !checks ? "none" : down ? "outage" : "up",
     };
   });
 }
 
-function uptime(rows: DayRow[]): number | null {
-  const checks = rows.reduce((sum, r) => sum + r.checks, 0);
-  const failed = rows.reduce((sum, r) => sum + r.failed, 0);
-  // Rounded down, so any failed check keeps the figure below 100.
-  return checks ? Math.floor(((checks - failed) / checks) * 10000) / 100 : null;
+function uptime(list: Day[]): number | null {
+  const checks = list.reduce((sum, d) => sum + d.checks, 0);
+  const down = list.reduce((sum, d) => sum + d.down, 0);
+  // Rounded down, so any outage keeps the figure below 100.
+  return checks ? Math.floor(((checks - down) / checks) * 10000) / 100 : null;
 }
 
 export async function status(db: D1Database, now: number): Promise<Status> {
-  const today = Math.floor(now / 86400);
+  const today = localDay(now);
   const hourNow = Math.floor(now / 3600);
-  const [targets, daily, hourly, snapshot, events] = await db.batch([
+  const [targets, daily, hourly, snapshot, events, outages] = await db.batch([
     db.prepare("SELECT * FROM targets"),
     db
-      .prepare("SELECT target, day, checks, failed FROM daily WHERE target IN ('prod', 'stage') AND day > ?")
+      .prepare("SELECT target, day, checks, down FROM daily WHERE target IN ('prod', 'stage') AND day > ?")
       .bind(today - 30),
     db.prepare("SELECT * FROM hourly WHERE hour >= ?").bind(hourNow - 24),
     db.prepare("SELECT fetched_at, body FROM snapshot WHERE id = 1"),
     db.prepare("SELECT ts, target, source, message FROM events ORDER BY id DESC LIMIT 15"),
+    db
+      .prepare("SELECT target, started, ended, detail FROM outages WHERE ended IS NULL OR ended > ? ORDER BY started")
+      .bind(now - 31 * 86400),
   ]);
 
   const byId = new Map((targets!.results as TargetState[]).map((row) => [row.id, row]));
   const dayRows = daily!.results as DayRow[];
+  const outageRows = outages!.results as (Outage & { target: string })[];
   const environments = ["prod", "stage"].map((id) => {
-    const rows = dayRows.filter((r) => r.target === id);
-    return { ...targetStatus(id, byId.get(id)), uptime30: uptime(rows), days: days(rows, today) };
+    const list = days(dayRows.filter((r) => r.target === id), today);
+    return {
+      ...targetStatus(id, byId.get(id)),
+      uptime30: uptime(list),
+      days: list,
+      outages: outageRows.filter((o) => o.target === id).map(({ started, ended, detail }) => ({ started, ended, detail })),
+    };
   });
   const previews = [...byId.keys()]
     .filter(isPreview)
@@ -170,7 +182,6 @@ export async function status(db: D1Database, now: number): Promise<Status> {
   return {
     now,
     interval: INTERVAL,
-    retention_days: RETENTION_DAYS,
     last_check: checkedAt.length ? Math.max(...checkedAt) : null,
     environments,
     previews,

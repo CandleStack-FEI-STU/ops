@@ -16,6 +16,22 @@ describe("parseSnapshot (agent contract, schema 1)", () => {
     expect(parseSnapshot(body)).toBeDefined();
   });
 
+  it("accepts an older agent without container times and versions", () => {
+    const body = copy();
+    for (const c of body.containers) {
+      delete c.created;
+      delete c.started;
+      delete c.version;
+    }
+    expect(parseSnapshot(body)).toBeDefined();
+  });
+
+  it("rejects mistyped container times", () => {
+    const body = copy();
+    body.containers[0].created = "yesterday";
+    expect(parseSnapshot(body)).toBeUndefined();
+  });
+
   it("rejects another schema version", () => {
     expect(parseSnapshot({ ...copy(), schema: 2 })).toBeUndefined();
   });

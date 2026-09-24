@@ -12,11 +12,12 @@ const gb = b => (b / 1024 ** 3).toFixed(1);
 const mb = b => b >= 1024 ** 3 ? gb(b) + ' GB' : Math.round(b / 1024 ** 2) + ' MB';
 const ago = s => s < 90 ? `${Math.max(0, Math.round(s))} s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 const span = s => s < 3600 ? `${Math.max(1, Math.round(s / 60))} min` : s < 172800 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} d`;
-const time = ts => new Date(ts * 1000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-const when = ts => {
-  const d = new Date(ts * 1000);
-  return d.toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit'}).replace('/', '.') + ' · ' + time(ts);
-};
+// Every time on the page is Bratislava time, like the days of the strips.
+const TZ = 'Europe/Bratislava';
+const time = ts => new Date(ts * 1000).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', timeZone: TZ});
+const dayMonth = ts => new Date(ts * 1000).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', timeZone: TZ}).replace('/', '.');
+const dateOf = ts => new Date(ts * 1000).toLocaleDateString('en-CA', {timeZone: TZ});
+const when = ts => dayMonth(ts) + ' · ' + time(ts);
 // "main-<sha>" and "pr-9-<sha>" read better as "main · abc1234".
 const version = v => {
   if (!v) return null;
@@ -49,12 +50,29 @@ function spark(values) {
     `<circle cx="${x(li)}" cy="${y(lv)}" r="2.2"/></svg>`;
 }
 
-// One mark per UTC day; a failed check means a minute without a healthy answer.
-function days(list) {
-  const label = d => d.mark === 'none' ? 'no data' : d.failed ? `${d.failed} min down` : 'no issues';
-  return `<div class="days" aria-label="Last 30 days">` + list.map(d =>
-    `<i class="${d.mark}" title="${d.date.slice(8, 10)}.${d.date.slice(5, 7)} · ${label(d)}"></i>`
-  ).join('') + `</div>`;
+// The outages of one day for its tooltip. An outage across midnight shows on both days,
+// with the date on the side that is not this day.
+function outageLines(outages, date, now) {
+  return outages.filter(o => dateOf(o.started) <= date && date <= dateOf(o.ended ?? now)).map(o => {
+    const at = ts => dateOf(ts) === date ? time(ts) : `${dayMonth(ts)} ${time(ts)}`;
+    const range = o.ended ? `${at(o.started)}–${at(o.ended)}` : `since ${at(o.started)}`;
+    return `<span class="tip-out"><span class="dot down"></span><span>Outage ${range} · ${span((o.ended ?? now) - o.started)}` +
+      `<span class="tip-sub">${esc(o.detail ?? 'no answer')}</span></span></span>`;
+  }).join('');
+}
+
+// One bar per day (Bratislava calendar days); outage minutes are failed checks two or more in a row.
+function days(e, now) {
+  return `<div class="days" aria-label="Last 30 days">` + e.days.map((d, i) => {
+    const weekday = new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-GB', {weekday: 'short', timeZone: 'UTC'});
+    const label = `${weekday} ${d.date.slice(8, 10)}.${d.date.slice(5, 7)}`;
+    const up = d.checks ? `${Math.floor((d.checks - d.down) / d.checks * 10000) / 100}%` : 'no data';
+    const lines = d.checks ? outageLines(e.outages, d.date, now) || '<span class="tip-ok">No outages</span>' : '<span class="tip-ok">No checks yet</span>';
+    const side = i < 9 ? 'left' : i > 20 ? 'right' : 'center';
+    const aria = `${label}: ${d.down ? `${d.down} min down` : d.checks ? 'no outages' : 'no data'}`;
+    return `<button class="day ${d.mark}" type="button" aria-label="${aria}"><span class="tip ${side}">` +
+      `<span class="tip-head"><b>${label}</b><span>${up}</span></span>${lines}</span></button>`;
+  }).join('') + `</div>`;
 }
 
 function envRow(e, now) {
@@ -62,8 +80,19 @@ function envRow(e, now) {
     <div class="svc"><div class="svc-top">${stateHtml(e.state, stateText(e, now))}
     ${facts([e.state === 'up' ? null : e.detail, e.ms != null ? `${e.ms} ms` : null, version(e.version),
       e.uptime30 != null ? `${e.uptime30}% · 30 d` : null])}</div>
-    ${days(e.days)}<div class="days-legend mono"><span>30 days ago</span><span>today</span></div></div></div>`;
+    ${days(e, now)}<div class="days-legend mono"><span>30 days ago</span><span>today</span></div></div></div>`;
 }
+
+// Touch screens have no hover: a tap opens the day's tooltip, a tap elsewhere closes it.
+document.addEventListener('click', event => {
+  const day = event.target.closest?.('.day');
+  document.querySelectorAll('.day.open').forEach(d => d !== day && d.classList.remove('open'));
+  document.querySelectorAll('.days.picked').forEach(s => s !== day?.parentElement && s.classList.remove('picked'));
+  if (day) {
+    day.classList.toggle('open');
+    day.parentElement.classList.toggle('picked', day.classList.contains('open'));
+  }
+});
 
 function headline(s) {
   const [prod, stage] = s.environments;
@@ -107,6 +136,8 @@ function serverHtml(v, now) {
   return html;
 }
 
+let lastEnvs = '';
+
 function render(s) {
   const [prod, stage] = s.environments;
   const now = s.now;
@@ -120,12 +151,14 @@ function render(s) {
 
   // Previews are reported by the agent: without it, the list is only the last known one.
   const pv = s.previews, known = s.server.state === 'up';
+  // Rebuilt only when the content changed (at most once a minute), so a refresh does not close an open tooltip.
   const pvState = !known ? 'unknown' : pv.some(p => p.state === 'down') ? 'down' : pv.some(p => p.state === 'warn') ? 'warn' : 'up';
   const pvText = (pv.length ? `${pv.length} running` : 'None running') + (known || !s.server.fetched_at ? '' : ` · last known ${time(s.server.fetched_at)}`);
-  $('envs').innerHTML = envRow(prod, now) + envRow(stage, now) +
+  const envs = envRow(prod, now) + envRow(stage, now) +
     `<div class="row"><div class="name"><b>PR previews</b><small>pr-&lt;N&gt;-preview.candlestack.tech</small></div>
     <div class="svc-top">${stateHtml(pvState, pvText)}
     <span class="facts mono">${pv.map(p => `<a href="https://${esc(p.host)}">${esc(p.env)}</a>`).join('')}</span></div></div>`;
+  if (envs !== lastEnvs) $('envs').innerHTML = lastEnvs = envs;
 
   $('sources').innerHTML = s.sources?.length ? s.sources.map(src =>
     `<div class="row"><div class="name"><b>${esc(src.name)}</b><small>${esc(src.host || '')}</small></div>

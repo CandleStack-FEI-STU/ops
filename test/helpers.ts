@@ -8,11 +8,15 @@ export const seconds = (ms: number) => Math.floor(ms / 1000);
 
 export async function resetDb() {
   await env.DB.batch(
-    ["targets", "daily", "hourly", "snapshot", "events"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
+    ["targets", "daily", "hourly", "snapshot", "events", "outages"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
   );
 }
 
-export function snapshot(sampledAt: number, previews: Snapshot["previews"] = []): Snapshot {
+export function snapshot(
+  sampledAt: number,
+  previews: Snapshot["previews"] = [],
+  containers: Snapshot["containers"] = [{ name: "app", env: "prod", state: "running", up: "2 hours", cpu: 0.1, mem: 12_000_000 }],
+): Snapshot {
   return {
     schema: 1,
     sampled_at: sampledAt,
@@ -27,7 +31,7 @@ export function snapshot(sampledAt: number, previews: Snapshot["previews"] = [])
       disk_used: 5_000_000_000,
       disk_total: 25_000_000_000,
     },
-    containers: [{ name: "app", env: "prod", state: "running", up: "2 hours", cpu: 0.1, mem: 12_000_000 }],
+    containers,
     previews,
   };
 }

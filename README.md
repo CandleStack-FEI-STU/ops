@@ -19,14 +19,30 @@ Cloudflare cron, every minute ──► app.candlestack.tech/api/health        p
 
 | Section | Source |
 | --- | --- |
-| Production, Staging | a health check from outside every minute; uptime and a strip of the last 30 days |
+| Production, Staging | a health check from outside every minute; uptime and a strip of the last 30 days, one bar per day with its outages on hover (tap on a phone) |
 | PR previews | the agent checks each `pr-<N>` environment on the server's internal network |
 | Server | CPU, memory and disk from the agent, with 24-hour charts |
 | Containers | the agent, through a read-only Docker API proxy |
-| Events | derived from the checks: outages (two failed checks in a row), recoveries with their length, deploys (a new version), previews started and removed |
+| Events | automatic, nobody writes them: see below |
 
 When the agent does not answer, the server counts as down, and the page shows the last data
 it had and since when the server has been silent.
+
+**Outage**: two or more failed checks in a row (timeout after 10 s, an HTTP status other than 200,
+or a body without `"status": "ok"`). It starts at the first failed check and ends at the next good
+one. A single failed check is not an outage. Uptime is the share of checked minutes outside
+outages. Days and times on the page are Bratislava time.
+
+**Events**, all derived from the checks and the agent:
+
+| Event | When |
+| --- | --- |
+| *Staging stopped responding (HTTP 502)*, *… recovered after 14 min* | an outage starts and ends; the same for the server agent |
+| *Staging deployed main · 1837bac* | a new app container with a new version |
+| *Staging redeployed main · 1837bac* | a new app container with the same version |
+| *Staging restarted* | the same container started again (a crash or a manual restart) |
+| *Server rebooted* | the server's boot time moved forward |
+| *Preview pr-12 started*, *… removed* | a `pr-<N>` environment appears or goes |
 
 ## Agent contract
 
@@ -40,12 +56,15 @@ nothing and holds no secrets. `GET https://vm.candlestack.tech/api/snapshot` ret
   "sampled_at": 1790266811,
   "host": { "label": "AWS t3.small · eu-north-1", "cpus": 2, "uptime": 71018.7, "cpu": 3.8, "load": 0.25,
             "mem_used": 715157504, "mem_total": 2004209664, "disk_used": 4237748736, "disk_total": 25821052928 },
-  "containers": [{ "name": "app", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664 }],
+  "containers": [{ "name": "app", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664,
+                   "created": 1790258400, "started": 1790258400, "version": "v0.1.0" }],
   "previews": [{ "env": "pr-5", "ok": true, "ms": 2, "version": "pr-5-<commit sha>" }]
 }
 ```
 
-`cpu` is `null` until the agent has two samples. A response that does not match
+`cpu` is `null` until the agent has two samples. `created`, `started` (unix seconds) and `version`
+(the app's `candlestack.version` label) feed the deploy, redeploy and restart events; an agent
+without them still works, without those events. A response that does not match
 (`src/snapshot.ts`) or a sample older than three minutes counts as a failed check.
 A change to the format needs a new `schema` number and a change in both repositories;
 `test/fixtures/agent-snapshot.json` is a real response and pins the contract in the tests.
