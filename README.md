@@ -88,7 +88,11 @@ Every push to `main` deploys (`.github/workflows/deploy.yml`, environment `produ
 tests, D1 migrations, `wrangler deploy`, then a wait until `/api/health` reports that the
 checks run.
 
+Editor cannot create a Worker, only deploy an existing one: to recreate `candlestack-ops` from
+scratch, give the token Workers Admin for that one deploy. Cron triggers need the account's
+`workers.dev` subdomain to exist (it does; this Worker does not use it).
+
 | Secret (environment `production`) | What |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | account token `github-actions-ops`: Workers Scripts and D1 edit, Workers Routes edit on candlestack.tech |
+| `CLOUDFLARE_API_TOKEN` | account API token `github-actions-ops`, expires 2027-09-25: Workers Editor, D1 Edit, Account Settings Read; Zone Read and Workers Routes Edit on candlestack.tech only |
 | `ACCESS_CLIENT_ID`, `ACCESS_CLIENT_SECRET` | service token `ops-monitor`, sent to the Worker as secrets on every deploy |

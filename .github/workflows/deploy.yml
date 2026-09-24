@@ -1,7 +1,7 @@
 name: Deploy
 
 # Every push to main goes to ops.candlestack.tech. Secrets live in the "production"
-# environment: CLOUDFLARE_API_TOKEN (Workers Scripts, D1, Workers Routes on candlestack.tech)
+# environment: CLOUDFLARE_API_TOKEN (see README, "Deployment")
 # and the Access service token "ops-monitor" (ACCESS_CLIENT_ID, ACCESS_CLIENT_SECRET).
 on:
   push:
