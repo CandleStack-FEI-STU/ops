@@ -24,6 +24,12 @@ export interface Container {
   up: string;
   cpu: number | null;
   mem: number | null;
+  /** Unix seconds; a new value is a new container (deploy or redeploy). */
+  created?: number | null;
+  /** Unix seconds of the last start; a new value for the same container is a restart. */
+  started?: number | null;
+  /** The app's version (label candlestack.version), for prod and stage. */
+  version?: string | null;
 }
 
 export interface PreviewCheck {
@@ -52,6 +58,7 @@ const isNumber = (v: unknown): v is number => typeof v === "number" && Number.is
 const isText = (v: unknown): v is string => typeof v === "string" && v.length <= MAX_TEXT;
 const isNumberOrNull = (v: unknown) => v === null || isNumber(v);
 const isTextOrNull = (v: unknown) => v === null || isText(v);
+const isOptional = (v: unknown, check: (x: unknown) => boolean) => v === undefined || check(v);
 
 function isHost(v: unknown): v is HostMetrics {
   return (
@@ -72,7 +79,10 @@ function isContainer(v: unknown): v is Container {
     isText(v.state) &&
     isText(v.up) &&
     isNumberOrNull(v.cpu) &&
-    isNumberOrNull(v.mem)
+    isNumberOrNull(v.mem) &&
+    isOptional(v.created, isNumberOrNull) &&
+    isOptional(v.started, isNumberOrNull) &&
+    isOptional(v.version, isTextOrNull)
   );
 }
 

@@ -13,14 +13,19 @@
     "disk_total": 25821052928
   },
   "containers": [
-    { "name": "app", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664 },
-    { "name": "app", "env": "stage", "state": "running", "up": "26 minutes", "cpu": 0.1, "mem": 12824768 },
-    { "name": "caddy", "env": "edge", "state": "running", "up": "3 hours", "cpu": 0.2, "mem": 21809856 },
-    { "name": "agent", "env": "agent", "state": "running", "up": "26 minutes", "cpu": 0.3, "mem": 19697664 },
-    { "name": "socket-proxy", "env": "agent", "state": "running", "up": "26 minutes", "cpu": null, "mem": null },
-    { "name": "app", "env": "pr-5", "state": "running", "up": "4 minutes", "cpu": 0.0, "mem": 11046592 }
+    {"name":  "app", "env":  "prod", "state":  "running", "up":  "3 hours", "cpu":  0.1, "mem":  13697664, "created":  1790258400, "started":  1790258400, "version":  "v0.1.0"},
+    {"name":  "app", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.1, "mem":  12824768, "created":  1790265251, "started":  1790265251, "version":  "main-1837bac057f0109df42a305208ce37f2bbf3bf5a"},
+    {"name":  "caddy", "env":  "edge", "state":  "running", "up":  "3 hours", "cpu":  0.2, "mem":  21809856, "created":  1790256000, "started":  1790256000, "version":  null},
+    {"name":  "agent", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  0.3, "mem":  19697664, "created":  1790265251, "started":  1790265251, "version":  null},
+    {"name":  "socket-proxy", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  null, "mem":  null, "created":  1790265251, "started":  1790265251, "version":  null},
+    {"name":  "app", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.0, "mem":  11046592, "created":  1790266571, "started":  1790266571, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
   ],
   "previews": [
-    { "env": "pr-5", "ok": true, "ms": 2, "version": "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+    {
+      "env": "pr-5",
+      "ok": true,
+      "ms": 2,
+      "version": "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
   ]
 }
