@@ -1,0 +1,27 @@
+name: Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Always the first job: no AI attribution in commits or the pull request.
+  no-ai-signs:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/no-ai-signs.yml@main
+
+  check:
+    needs: no-ai-signs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      # Bundles the Worker exactly like a deploy, without uploading it.
+      - run: npx wrangler deploy --dry-run --outdir dist

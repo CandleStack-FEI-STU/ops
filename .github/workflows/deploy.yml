@@ -1,0 +1,70 @@
+name: Deploy
+
+# Every push to main goes to ops.candlestack.tech. Secrets live in the "production"
+# environment: CLOUDFLARE_API_TOKEN (Workers Scripts, D1, Workers Routes on candlestack.tech)
+# and the Access service token "ops-monitor" (ACCESS_CLIENT_ID, ACCESS_CLIENT_SECRET).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  no-ai-signs:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/no-ai-signs.yml@main
+    permissions:
+      contents: read
+
+  deploy:
+    needs: no-ai-signs
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://ops.candlestack.tech
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACCESS_CLIENT_ID: ${{ secrets.ACCESS_CLIENT_ID }}
+      ACCESS_CLIENT_SECRET: ${{ secrets.ACCESS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+
+      - name: Apply database migrations
+        run: npx wrangler d1 migrations apply DB --remote
+
+      # The service token goes up with every deploy, so GitHub stays the one place it is kept.
+      - name: Deploy the Worker
+        run: |
+          secrets=$(mktemp)
+          trap 'rm -f "$secrets"' EXIT
+          jq -n --arg id "$ACCESS_CLIENT_ID" --arg secret "$ACCESS_CLIENT_SECRET" \
+            '{ACCESS_CLIENT_ID: $id, ACCESS_CLIENT_SECRET: $secret}' >"$secrets"
+          npx wrangler deploy --secrets-file "$secrets"
+
+      # /api/health turns ok once the cron has run, at most about a minute after the first deploy.
+      - name: Wait for the checks to run
+        run: |
+          for attempt in $(seq 30); do
+            if curl --silent --fail --max-time 10 \
+                --header "CF-Access-Client-Id: $ACCESS_CLIENT_ID" \
+                --header "CF-Access-Client-Secret: $ACCESS_CLIENT_SECRET" \
+                https://ops.candlestack.tech/api/health | grep --quiet '"status":"ok"'; then
+              echo "ops.candlestack.tech is checking every minute"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::ops.candlestack.tech/api/health did not turn ok within 5 minutes"
+          exit 1

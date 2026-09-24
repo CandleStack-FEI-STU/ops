@@ -1,0 +1,42 @@
+// ops.candlestack.tech: uptime checks and the status page for the CandleStack team.
+// Runs on the Workers Free plan. When a daily limit is reached, requests and D1 queries fail
+// until the limit resets at 00:00 UTC; nothing is ever billed.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "candlestack-ops",
+  "account_id": "8547e156577f8e20ac1daf8ca31ebd9d",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+
+  // The only way in is the custom domain, which Cloudflare Access protects (app "team-only").
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "ops.candlestack.tech", "custom_domain": true }],
+
+  // The Worker answers every request first, so the page itself is also checked for Access.
+  "assets": { "directory": "public", "binding": "ASSETS", "run_worker_first": true },
+
+  "triggers": { "crons": ["* * * * *"] },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "candlestack-ops",
+      "database_id": "c1c0eb38-5bf6-4b22-a27e-b34f70c80317",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "vars": {
+    "PROD_URL": "https://app.candlestack.tech",
+    "STAGE_URL": "https://stage.candlestack.tech",
+    "AGENT_URL": "https://vm.candlestack.tech",
+    "ACCESS_TEAM_DOMAIN": "candlestack.cloudflareaccess.com",
+    "ACCESS_AUD": "477024847ebd007272c406074e3dea667279fb4b5048ac2bb6ea706d56a0c341"
+  },
+
+  // Service token "ops-monitor": lets the checks through Access to stage and the server agent.
+  "secrets": { "required": ["ACCESS_CLIENT_ID", "ACCESS_CLIENT_SECRET"] },
+
+  "observability": { "enabled": true }
+}
