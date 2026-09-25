@@ -182,13 +182,18 @@ export function transition(prev: TargetState | undefined, result: CheckResult, t
   return { next, events, outage, down };
 }
 
-function app(snapshot: Snapshot, env: string): Container | undefined {
-  return snapshot.containers.find((c) => c.env === env && c.name === "app");
+/**
+ * The environment's main container: the compose service `backend`, or `app` in an
+ * environment still deployed with the placeholder app. `backend` wins if both run.
+ */
+function mainContainer(snapshot: Snapshot, env: string): Container | undefined {
+  const containers = snapshot.containers.filter((c) => c.env === env);
+  return containers.find((c) => c.name === "backend") ?? containers.find((c) => c.name === "app");
 }
 
 /**
  * Deploys, redeploys, restarts and reboots, from two snapshots of the agent in a row:
- * a new app container with a new version is a deploy, with the same version a redeploy;
+ * a new main container with a new version is a deploy, with the same version a redeploy;
  * the same container with a new start time is a restart; a later boot time is a reboot.
  */
 export function snapshotEvents(prev: Snapshot | undefined, cur: Snapshot): Event[] {
@@ -199,8 +204,8 @@ export function snapshotEvents(prev: Snapshot | undefined, cur: Snapshot): Event
     events.push({ ts: Math.round(boot(cur)), target: "vm", source: "server", message: "Server rebooted" });
   }
   for (const env of ["prod", "stage"]) {
-    const before = app(prev, env);
-    const after = app(cur, env);
+    const before = mainContainer(prev, env);
+    const after = mainContainer(cur, env);
     if (!after || after.created == null) continue;
     const name = targetName(env);
     const version = after.version ? ` ${shortVersion(after.version)}` : "";

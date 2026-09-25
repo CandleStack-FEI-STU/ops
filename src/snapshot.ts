@@ -28,7 +28,7 @@ export interface Container {
   created?: number | null;
   /** Unix seconds of the last start; a new value for the same container is a restart. */
   started?: number | null;
-  /** The app's version (label candlestack.version), for prod and stage. */
+  /** The deployed version (label candlestack.version); null on containers without it, like redis. */
   version?: string | null;
 }
 

@@ -14,11 +14,15 @@
   },
   "containers": [
     {"name":  "app", "env":  "prod", "state":  "running", "up":  "3 hours", "cpu":  0.1, "mem":  13697664, "created":  1790258400, "started":  1790258400, "version":  "v0.1.0"},
-    {"name":  "app", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.1, "mem":  12824768, "created":  1790265251, "started":  1790265251, "version":  "main-1837bac057f0109df42a305208ce37f2bbf3bf5a"},
+    {"name":  "backend", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.4, "mem":  94371840, "created":  1790265251, "started":  1790265252, "version":  "main-1837bac057f0109df42a305208ce37f2bbf3bf5a"},
+    {"name":  "frontend", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.0, "mem":  12824768, "created":  1790265251, "started":  1790265252, "version":  "main-1837bac057f0109df42a305208ce37f2bbf3bf5a"},
+    {"name":  "redis", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.2, "mem":  4194304, "created":  1790265250, "started":  1790265250, "version":  null},
     {"name":  "caddy", "env":  "edge", "state":  "running", "up":  "3 hours", "cpu":  0.2, "mem":  21809856, "created":  1790256000, "started":  1790256000, "version":  null},
     {"name":  "agent", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  0.3, "mem":  19697664, "created":  1790265251, "started":  1790265251, "version":  null},
     {"name":  "socket-proxy", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  null, "mem":  null, "created":  1790265251, "started":  1790265251, "version":  null},
-    {"name":  "app", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.0, "mem":  11046592, "created":  1790266571, "started":  1790266571, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+    {"name":  "backend", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.3, "mem":  90177536, "created":  1790266571, "started":  1790266572, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"name":  "frontend", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.0, "mem":  11046592, "created":  1790266571, "started":  1790266572, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"name":  "redis", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.1, "mem":  3145728, "created":  1790266570, "started":  1790266570, "version":  null}
   ],
   "previews": [
     {

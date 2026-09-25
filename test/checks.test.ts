@@ -32,6 +32,8 @@ function stageApp(overrides: Partial<Container>): Container {
     version: "main-" + "1".repeat(40), ...overrides };
 }
 
+const stageBackend = (overrides: Partial<Container>) => stageApp({ name: "backend", ...overrides });
+
 describe("transition", () => {
   it("opens an outage on the second failed check in a row and counts both minutes", () => {
     const first = transition(state({}), bad("prod"), 1000);
@@ -120,6 +122,45 @@ describe("snapshotEvents", () => {
     expect(snapshotEvents(at([], 5000, 4000), at([], 5060, 30))).toEqual([
       { ts: 5030, target: "vm", source: "server", message: "Server rebooted" },
     ]);
+  });
+
+  it("follows the backend container of an environment", () => {
+    const before = at([stageBackend({})]);
+    expect(snapshotEvents(before, at([stageBackend({ created: 2000, started: 2000, version: v2 })]))).toEqual([
+      { ts: 2000, target: "stage", source: "deploy", message: "Staging deployed main · 4330c32" },
+    ]);
+    expect(snapshotEvents(before, at([stageBackend({ started: 3000 })]))).toEqual([
+      { ts: 3000, target: "stage", source: "restart", message: "Staging restarted" },
+    ]);
+  });
+
+  it("still follows the app container where no backend runs", () => {
+    expect(snapshotEvents(at([stageApp({})]), at([stageApp({ created: 2000, started: 2000, version: v2 })]))).toEqual([
+      { ts: 2000, target: "stage", source: "deploy", message: "Staging deployed main · 4330c32" },
+    ]);
+  });
+
+  it("follows the backend when an environment runs both backend and app", () => {
+    const before = at([stageApp({}), stageBackend({ created: 1500, started: 1500, version: v2 })]);
+    const appChanged = at([stageApp({ created: 2000, started: 2000 }), stageBackend({ created: 1500, started: 1500, version: v2 })]);
+    expect(snapshotEvents(before, appChanged)).toEqual([]);
+    const backendChanged = at([stageApp({}), stageBackend({ created: 2500, started: 2500, version: v2 })]);
+    expect(snapshotEvents(before, backendChanged)).toEqual([
+      { ts: 2500, target: "stage", source: "deploy", message: "Staging redeployed main · 4330c32" },
+    ]);
+  });
+
+  it("reports the switch from app to backend as a deploy and ignores the other services", () => {
+    const frontend = stageApp({ name: "frontend", created: 2000, started: 2000, version: v2 });
+    const redis = stageApp({ name: "redis", created: 1990, started: 1990, version: null });
+    const after = at([stageBackend({ created: 2000, started: 2000, version: v2 }), frontend, redis]);
+    expect(snapshotEvents(at([stageApp({})]), after)).toEqual([
+      { ts: 2000, target: "stage", source: "deploy", message: "Staging deployed main · 4330c32" },
+    ]);
+    // Only the backend counts: a restart of redis or the frontend is not an event.
+    const restarted = at([stageBackend({ created: 2000, started: 2000, version: v2 }),
+      { ...frontend, started: 3000 }, { ...redis, started: 3000 }]);
+    expect(snapshotEvents(after, restarted)).toEqual([]);
   });
 
   it("stays quiet with an agent that does not report container times", () => {
@@ -219,6 +260,23 @@ describe("runChecks", () => {
     const events = await runChecks(env, minute(1), fetcher);
     expect(events.map((e) => e.message)).toEqual(["Staging redeployed main · 1111111"]);
     expect((await status(env.DB, seconds(minute(1)))).events[0]).toMatchObject({ source: "deploy", message: "Staging redeployed main · 1111111" });
+  });
+
+  it("records deploys of prod still on app and stage already on backend", async () => {
+    const created = seconds(minute(0)) - 600;
+    let prod = stageApp({ env: "prod", created, started: created, version: "v0.1.0" });
+    let stage = stageBackend({ created, started: created });
+    const { fetcher } = fakeFetch({
+      [PROD]: healthy("v0.1.0"),
+      [STAGE]: healthy("main-abc"),
+      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), [], [prod, stage])),
+    });
+    await runChecks(env, minute(0), fetcher);
+    const deployed = seconds(minute(1)) - 5;
+    prod = { ...prod, created: deployed, started: deployed, version: "v0.2.0" };
+    stage = { ...stage, created: deployed, started: deployed, version: "main-4330c32" + "0".repeat(33) };
+    const events = await runChecks(env, minute(1), fetcher);
+    expect(events.map((e) => e.message)).toEqual(["Production deployed v0.2.0", "Staging deployed main · 4330c32"]);
   });
 
   it("marks the server down when the agent stops answering and keeps the last data", async () => {
