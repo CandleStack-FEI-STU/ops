@@ -38,11 +38,15 @@ outages. Days and times on the page are Bratislava time.
 | Event | When |
 | --- | --- |
 | *Staging stopped responding (HTTP 502)*, *… recovered after 14 min* | an outage starts and ends; the same for the server agent |
-| *Staging deployed main · 1837bac* | a new app container with a new version |
-| *Staging redeployed main · 1837bac* | a new app container with the same version |
-| *Staging restarted* | the same container started again (a crash or a manual restart) |
+| *Staging deployed main · 1837bac* | a new main container with a new version |
+| *Staging redeployed main · 1837bac* | a new main container with the same version |
+| *Staging restarted* | the main container started again (a crash or a manual restart) |
 | *Server rebooted* | the server's boot time moved forward |
 | *Preview pr-12 started*, *… removed* | a `pr-<N>` environment appears or goes |
+
+The main container of an environment is the compose service `backend`, or `app` where the
+placeholder still runs (prod until its next release); when both run, `backend` counts.
+The frontend and Redis containers cause no events.
 
 ## Agent contract
 
@@ -63,8 +67,8 @@ nothing and holds no secrets. `GET https://vm.candlestack.tech/api/snapshot` ret
 ```
 
 `cpu` is `null` until the agent has two samples. `created`, `started` (unix seconds) and `version`
-(the app's `candlestack.version` label) feed the deploy, redeploy and restart events; an agent
-without them still works, without those events. A response that does not match
+(the `candlestack.version` label) of the main container feed the deploy, redeploy and restart
+events; an agent without them still works, without those events. A response that does not match
 (`src/snapshot.ts`) or a sample older than three minutes counts as a failed check.
 A change to the format needs a new `schema` number and a change in both repositories;
 `test/fixtures/agent-snapshot.json` is a real response and pins the contract in the tests.
