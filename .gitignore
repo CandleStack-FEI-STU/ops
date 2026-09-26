@@ -7,3 +7,6 @@ dist/
 .env*
 # crash dumps
 *.stackdump
+
+# local git worktrees (Claude Code creates them here)
+.claude/worktrees/
