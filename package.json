@@ -10,9 +10,9 @@
     "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.2.5",
+    "@cloudflare/vitest-plugin": "1.2.7",
     "typescript": "6.0.3",
     "vitest": "4.1.11",
-    "wrangler": "4.138.0"
+    "wrangler": "4.140.0"
   }
 }
