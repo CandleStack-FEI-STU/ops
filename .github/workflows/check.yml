@@ -18,6 +18,14 @@ jobs:
   linked-issue:
     uses: CandleStack-FEI-STU/.github/.github/workflows/linked-issue.yml@main
 
+  # The title and branch follow the conventions; a warning when the pull request is large.
+  # Required and independent like no-ai-signs: editing the title re-runs only this job
+  # (pr-hygiene-edited.yml).
+  pr-hygiene:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/pr-hygiene.yml@main
+    permissions:
+      pull-requests: read
+
   check:
     runs-on: ubuntu-latest
     steps:
