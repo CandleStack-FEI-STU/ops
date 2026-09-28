@@ -13,6 +13,11 @@ jobs:
   no-ai-signs:
     uses: CandleStack-FEI-STU/.github/.github/workflows/no-ai-signs.yml@main
 
+  # The description closes an issue ("Closes #N"). Required and independent like no-ai-signs:
+  # editing the description re-runs only this job (linked-issue-edited.yml).
+  linked-issue:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/linked-issue.yml@main
+
   check:
     runs-on: ubuntu-latest
     steps:
