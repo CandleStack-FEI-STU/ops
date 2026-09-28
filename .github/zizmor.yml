@@ -1,0 +1,8 @@
+# zizmor (https://docs.zizmor.sh) audits the workflows; pre-commit runs it at --min-severity=medium.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # The organization's shared workflows are called at @main on purpose.
+        CandleStack-FEI-STU/*: ref-pin
+        "*": hash-pin
