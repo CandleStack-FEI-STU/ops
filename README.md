@@ -100,6 +100,7 @@ queries fail until 00:00 UTC; nothing is ever billed, and nothing here can turn 
 npm ci
 npm test          # Vitest inside the Workers runtime, with a local D1
 npm run check     # generated types are current, TypeScript
+npm run lint      # oxlint, Prettier and knip; npm run format fixes the formatting
 ```
 
 To run it locally, put `ACCESS_CLIENT_ID` and `ACCESS_CLIENT_SECRET` in `.dev.vars` (any values;

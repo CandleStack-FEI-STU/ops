@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // The status page's script, loaded by public/index.html.
+  "entry": ["public/app.js"],
+  // cloudflare:test is a virtual module of the Workers Vitest plugin, not a package.
+  "ignoreDependencies": ["cloudflare"],
+  "ignoreExportsUsedInFile": true
+}

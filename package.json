@@ -8,10 +8,14 @@
     "check": "wrangler types --check && tsc --noEmit",
     "test": "vitest run",
     "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "lint": "oxlint --type-aware && prettier --check . && knip"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.2.7",
+    "knip": "6.38.0",
+    "oxlint": "1.86.0",
+    "oxlint-tsgolint": "7.0.2003",
     "prettier": "3.9.9",
     "typescript": "7.0.2",
     "vitest": "4.1.11",

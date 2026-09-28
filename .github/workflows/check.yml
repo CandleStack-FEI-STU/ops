@@ -28,6 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run lint
       - run: npm test
       # Bundles the Worker exactly like a deploy, without uploading it.
       - run: npx wrangler deploy --dry-run --outdir dist

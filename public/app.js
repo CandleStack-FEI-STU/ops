@@ -187,6 +187,25 @@ function serverHtml(v, now) {
   return html;
 }
 
+function previewsRow(s) {
+  // Previews are reported by the agent: without it, the list is only the last known one.
+  const pv = s.previews,
+    known = s.server.state === "up";
+  const pvState = !known
+    ? "unknown"
+    : pv.some((p) => p.state === "down")
+      ? "down"
+      : pv.some((p) => p.state === "warn")
+        ? "warn"
+        : "up";
+  const pvText =
+    (pv.length ? `${pv.length} running` : "None running") +
+    (known || !s.server.fetched_at ? "" : ` · last known ${time(s.server.fetched_at)}`);
+  return `<div class="row"><div class="name"><b>PR previews</b><small>pr-&lt;N&gt;-preview.candlestack.tech</small></div>
+    <div class="svc-top">${stateHtml(pvState, pvText)}
+    <span class="facts mono">${pv.map((p) => `<a href="https://${esc(p.host)}">${esc(p.env)}</a>`).join("")}</span></div></div>`;
+}
+
 let lastEnvs = "";
 
 function render(s) {
@@ -206,26 +225,8 @@ function render(s) {
       ? "Waiting for the first check"
       : `${late ? "Checks are late" : "Checked every minute from Cloudflare"} · last check ${ago(now - s.last_check)}`;
 
-  // Previews are reported by the agent: without it, the list is only the last known one.
-  const pv = s.previews,
-    known = s.server.state === "up";
   // Rebuilt only when the content changed (at most once a minute), so a refresh does not close an open tooltip.
-  const pvState = !known
-    ? "unknown"
-    : pv.some((p) => p.state === "down")
-      ? "down"
-      : pv.some((p) => p.state === "warn")
-        ? "warn"
-        : "up";
-  const pvText =
-    (pv.length ? `${pv.length} running` : "None running") +
-    (known || !s.server.fetched_at ? "" : ` · last known ${time(s.server.fetched_at)}`);
-  const envs =
-    envRow(prod, now) +
-    envRow(stage, now) +
-    `<div class="row"><div class="name"><b>PR previews</b><small>pr-&lt;N&gt;-preview.candlestack.tech</small></div>
-    <div class="svc-top">${stateHtml(pvState, pvText)}
-    <span class="facts mono">${pv.map((p) => `<a href="https://${esc(p.host)}">${esc(p.env)}</a>`).join("")}</span></div></div>`;
+  const envs = envRow(prod, now) + envRow(stage, now) + previewsRow(s);
   if (envs !== lastEnvs) $("envs").innerHTML = lastEnvs = envs;
 
   $("sources").innerHTML = s.sources?.length
@@ -268,11 +269,11 @@ async function refresh() {
     const r = await fetch("/api/status", { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     render(await r.json());
-  } catch (err) {
+  } catch {
     $("headline").textContent = "Could not load the status";
     $("overall-dot").className = "dot down";
     $("overall-text").textContent = "Retrying every 30 s · reload the page if your sign-in expired";
   }
 }
-refresh();
+void refresh();
 setInterval(refresh, 30000);
