@@ -1,0 +1,12 @@
+# Weekly update pull requests for the actions the workflows use, pinned to commit SHAs. Minor
+# and patch updates come together in one pull request; each major update comes alone.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
