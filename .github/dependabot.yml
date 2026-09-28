@@ -1,5 +1,6 @@
 # Weekly update pull requests. Minor and patch updates of an ecosystem come together in one
-# pull request; each major update comes alone.
+# pull request; each major update comes alone. A release waits 7 days first, so a compromised
+# one is likely pulled before it reaches us.
 version: 2
 updates:
   # The dev dependencies in package.json, pinned to exact versions.
@@ -7,6 +8,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       npm:
         patterns: ["*"]
@@ -21,6 +24,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
