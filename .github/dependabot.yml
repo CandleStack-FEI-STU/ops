@@ -1,7 +1,18 @@
-# Weekly update pull requests for the actions the workflows use, pinned to commit SHAs. Minor
-# and patch updates come together in one pull request; each major update comes alone.
+# Weekly update pull requests. Minor and patch updates of an ecosystem come together in one
+# pull request; each major update comes alone.
 version: 2
 updates:
+  # The dev dependencies in package.json, pinned to exact versions.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # The actions the workflows use, pinned to commit SHAs.
   - package-ecosystem: github-actions
     directory: /
     schedule:
