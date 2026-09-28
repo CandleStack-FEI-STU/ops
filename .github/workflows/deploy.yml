@@ -59,7 +59,7 @@ jobs:
       # /api/health turns ok once the cron has run, at most about a minute after the first deploy.
       - name: Wait for the checks to run
         run: |
-          for attempt in $(seq 30); do
+          for _ in $(seq 30); do
             if curl --silent --fail --max-time 10 \
                 --header "CF-Access-Client-Id: $ACCESS_CLIENT_ID" \
                 --header "CF-Access-Client-Secret: $ACCESS_CLIENT_SECRET" \

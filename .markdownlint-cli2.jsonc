@@ -1,0 +1,15 @@
+// markdownlint rules for the Markdown files (https://github.com/DavidAnson/markdownlint).
+{
+  "config": {
+    "default": true,
+    // Off: long lines (prose is not wrapped), inline HTML, bare URLs,
+    // a first line that is not a heading, and table column alignment.
+    "MD013": false,
+    "MD033": false,
+    "MD034": false,
+    "MD041": false,
+    "MD060": false,
+    // The same heading is fine under different parents.
+    "MD024": { "siblings_only": true }
+  }
+}

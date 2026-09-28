@@ -17,7 +17,9 @@ its agent contract is shared with `infra/agent/` in the candlestack repository.
 
 ## Verify
 
-Before every push:
+The git hooks (`uvx pre-commit install`, once per clone) fix whitespace and stop secrets, typos,
+Markdown and workflow findings and AI attribution on every commit; CI's `Pre-commit` job runs
+them on every file, as `uvx pre-commit run --all-files` does. Before every push:
 
 ```sh
 npm ci

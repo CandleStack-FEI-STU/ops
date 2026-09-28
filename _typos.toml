@@ -1,0 +1,4 @@
+# typos (pre-commit): words it would "fix" that are right here.
+[default.extend-identifiers]
+# oxlint's max-lines-per-function option: immediately invoked function expressions.
+IIFEs = "IIFEs"
