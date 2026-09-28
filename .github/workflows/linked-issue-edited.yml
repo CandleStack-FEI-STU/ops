@@ -1,0 +1,20 @@
+name: Linked issue (edited)
+
+# linked-issue in check.yml reads the pull request's description, but editing it does not start
+# that workflow again. This re-runs only that check on an edit, under the same job name, so the
+# required check `linked-issue / Linked issue` follows the current text while `check` keeps its
+# result.
+on:
+  pull_request:
+    types: [edited]
+
+permissions: {}
+
+# A newer edit replaces the check of an older one.
+concurrency:
+  group: linked-issue-edited-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  linked-issue:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/linked-issue.yml@main
