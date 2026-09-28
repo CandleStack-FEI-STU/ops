@@ -15,7 +15,9 @@ export async function resetDb() {
 export function snapshot(
   sampledAt: number,
   previews: Snapshot["previews"] = [],
-  containers: Snapshot["containers"] = [{ name: "app", env: "prod", state: "running", up: "2 hours", cpu: 0.1, mem: 12_000_000 }],
+  containers: Snapshot["containers"] = [
+    { name: "app", env: "prod", state: "running", up: "2 hours", cpu: 0.1, mem: 12_000_000 },
+  ],
 ): Snapshot {
   return {
     schema: 1,
@@ -52,4 +54,7 @@ export function fakeFetch(replies: Record<string, () => Reply>) {
 }
 
 export const healthy = (version: string) => () => Response.json({ status: "ok", version });
-export const failing = (status = 502) => () => new Response("Bad gateway", { status });
+export const failing =
+  (status = 502) =>
+  () =>
+    new Response("Bad gateway", { status });

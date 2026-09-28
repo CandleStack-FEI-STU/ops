@@ -47,7 +47,10 @@ export default {
       return withHeaders(new Response("Forbidden", { status: 403 }), "no-store");
     }
     if (request.method !== "GET" && request.method !== "HEAD") {
-      return withHeaders(new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }), "no-store");
+      return withHeaders(
+        new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }),
+        "no-store",
+      );
     }
     const now = Math.floor(Date.now() / 1000);
     switch (new URL(request.url).pathname) {

@@ -58,7 +58,10 @@ const dateParts = new Intl.DateTimeFormat("en-CA", {
 
 /** Days since 1970-01-01 of the Bratislava calendar date at `ts` (unix seconds). */
 export function localDay(ts: number): number {
-  const [year, month, day] = dateParts.format(new Date(ts * 1000)).split("-").map(Number);
+  const [year, month, day] = dateParts
+    .format(new Date(ts * 1000))
+    .split("-")
+    .map(Number);
   return Date.UTC(year!, month! - 1, day!) / 86_400_000;
 }
 
@@ -262,15 +265,24 @@ export async function record(
   for (const result of results) {
     const { next, events: caused, outage, down } = transition(prev.get(result.target), result, ts);
     statements.push(
-      upsertTarget.bind(next.id, next.ok, next.ms, next.version, next.detail, next.checked_at,
-        next.fails, next.down_since),
+      upsertTarget.bind(
+        next.id,
+        next.ok,
+        next.ms,
+        next.version,
+        next.detail,
+        next.checked_at,
+        next.fails,
+        next.down_since,
+      ),
     );
     events.push(...caused);
     if (!STRIP_TARGETS.has(result.target)) continue;
     statements.push(countDay.bind(result.target, day, result.ok ? 0 : 1, down));
     if (outage === "opened") {
       statements.push(
-        db.prepare("INSERT INTO outages (target, started, detail) VALUES (?, ?, ?)")
+        db
+          .prepare("INSERT INTO outages (target, started, detail) VALUES (?, ?, ?)")
           .bind(result.target, next.down_since, result.detail),
       );
     } else if (outage === "closed") {

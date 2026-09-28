@@ -64,9 +64,7 @@ function isHost(v: unknown): v is HostMetrics {
   return (
     isObject(v) &&
     isText(v.label) &&
-    ["cpus", "uptime", "load", "mem_used", "mem_total", "disk_used", "disk_total"].every((k) =>
-      isNumber(v[k]),
-    ) &&
+    ["cpus", "uptime", "load", "mem_used", "mem_total", "disk_used", "disk_total"].every((k) => isNumber(v[k])) &&
     isNumberOrNull(v.cpu)
   );
 }

@@ -1,0 +1,11 @@
+# Generated
+dist/
+.wrangler/
+worker-configuration.d.ts
+package-lock.json
+
+# A real response of the server agent, kept byte for byte
+test/fixtures/
+
+# Prose, not code: Markdown keeps its hand-written tables and diagrams.
+*.md

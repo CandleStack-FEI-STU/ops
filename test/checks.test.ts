@@ -1,13 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  localDay,
-  runChecks,
-  snapshotEvents,
-  transition,
-  type CheckResult,
-  type TargetState,
-} from "../src/checks";
+import { localDay, runChecks, snapshotEvents, transition, type CheckResult, type TargetState } from "../src/checks";
 import type { Container } from "../src/snapshot";
 import { status } from "../src/status";
 import { failing, fakeFetch, healthy, minute, resetDb, seconds, snapshot } from "./helpers";
@@ -17,19 +10,47 @@ const STAGE = "https://stage.candlestack.tech/api/health";
 const AGENT = "https://vm.candlestack.tech/api/snapshot";
 
 const ok = (target: string, version: string | null = null): CheckResult => ({
-  target, ok: true, ms: 40, version, detail: null,
+  target,
+  ok: true,
+  ms: 40,
+  version,
+  detail: null,
 });
 const bad = (target: string, detail = "HTTP 502"): CheckResult => ({
-  target, ok: false, ms: 40, version: null, detail,
+  target,
+  ok: false,
+  ms: 40,
+  version: null,
+  detail,
 });
 
 function state(overrides: Partial<TargetState>): TargetState {
-  return { id: "prod", ok: 1, ms: 40, version: "v0.1.0", detail: null, checked_at: 0, fails: 0, down_since: null, ...overrides };
+  return {
+    id: "prod",
+    ok: 1,
+    ms: 40,
+    version: "v0.1.0",
+    detail: null,
+    checked_at: 0,
+    fails: 0,
+    down_since: null,
+    ...overrides,
+  };
 }
 
 function stageApp(overrides: Partial<Container>): Container {
-  return { name: "app", env: "stage", state: "running", up: "1 hour", cpu: 0, mem: 1, created: 1000, started: 1000,
-    version: "main-" + "1".repeat(40), ...overrides };
+  return {
+    name: "app",
+    env: "stage",
+    state: "running",
+    up: "1 hour",
+    cpu: 0,
+    mem: 1,
+    created: 1000,
+    started: 1000,
+    version: "main-" + "1".repeat(40),
+    ...overrides,
+  };
 }
 
 const stageBackend = (overrides: Partial<Container>) => stageApp({ name: "backend", ...overrides });
@@ -57,7 +78,11 @@ describe("transition", () => {
   });
 
   it("closes the outage and reports how long it lasted", () => {
-    const { next, events, outage } = transition(state({ ok: 0, fails: 5, down_since: 1000 }), ok("prod", "v0.1.0"), 1000 + 125 * 60);
+    const { next, events, outage } = transition(
+      state({ ok: 0, fails: 5, down_since: 1000 }),
+      ok("prod", "v0.1.0"),
+      1000 + 125 * 60,
+    );
     expect(next).toMatchObject({ ok: 1, fails: 0, down_since: null });
     expect(outage).toBe("closed");
     expect(events.map((e) => e.message)).toEqual(["Production recovered after 2 h 5 min"]);
@@ -113,8 +138,12 @@ describe("snapshotEvents", () => {
   });
 
   it("tells a container that came back after being down from a new one", () => {
-    expect(snapshotEvents(at([]), at([stageApp({ started: 3000 })]))[0]).toMatchObject({ message: "Staging restarted" });
-    expect(snapshotEvents(at([]), at([stageApp({ started: 1002 })]))[0]).toMatchObject({ message: "Staging deployed main · 1111111" });
+    expect(snapshotEvents(at([]), at([stageApp({ started: 3000 })]))[0]).toMatchObject({
+      message: "Staging restarted",
+    });
+    expect(snapshotEvents(at([]), at([stageApp({ started: 1002 })]))[0]).toMatchObject({
+      message: "Staging deployed main · 1111111",
+    });
   });
 
   it("reports a reboot when the boot time moves forward", () => {
@@ -142,7 +171,10 @@ describe("snapshotEvents", () => {
 
   it("follows the backend when an environment runs both backend and app", () => {
     const before = at([stageApp({}), stageBackend({ created: 1500, started: 1500, version: v2 })]);
-    const appChanged = at([stageApp({ created: 2000, started: 2000 }), stageBackend({ created: 1500, started: 1500, version: v2 })]);
+    const appChanged = at([
+      stageApp({ created: 2000, started: 2000 }),
+      stageBackend({ created: 1500, started: 1500, version: v2 }),
+    ]);
     expect(snapshotEvents(before, appChanged)).toEqual([]);
     const backendChanged = at([stageApp({}), stageBackend({ created: 2500, started: 2500, version: v2 })]);
     expect(snapshotEvents(before, backendChanged)).toEqual([
@@ -158,8 +190,11 @@ describe("snapshotEvents", () => {
       { ts: 2000, target: "stage", source: "deploy", message: "Staging deployed main · 4330c32" },
     ]);
     // Only the backend counts: a restart of redis or the frontend is not an event.
-    const restarted = at([stageBackend({ created: 2000, started: 2000, version: v2 }),
-      { ...frontend, started: 3000 }, { ...redis, started: 3000 }]);
+    const restarted = at([
+      stageBackend({ created: 2000, started: 2000, version: v2 }),
+      { ...frontend, started: 3000 },
+      { ...redis, started: 3000 },
+    ]);
     expect(snapshotEvents(after, restarted)).toEqual([]);
   });
 
@@ -259,7 +294,10 @@ describe("runChecks", () => {
     stage = { ...stage, created: seconds(minute(1)) - 5, started: seconds(minute(1)) - 5 };
     const events = await runChecks(env, minute(1), fetcher);
     expect(events.map((e) => e.message)).toEqual(["Staging redeployed main · 1111111"]);
-    expect((await status(env.DB, seconds(minute(1)))).events[0]).toMatchObject({ source: "deploy", message: "Staging redeployed main · 1111111" });
+    expect((await status(env.DB, seconds(minute(1)))).events[0]).toMatchObject({
+      source: "deploy",
+      message: "Staging redeployed main · 1111111",
+    });
   });
 
   it("records deploys of prod still on app and stage already on backend", async () => {
@@ -284,7 +322,10 @@ describe("runChecks", () => {
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
       [STAGE]: healthy("main-abc"),
-      [AGENT]: () => (agentUp ? Response.json(snapshot(seconds(minute(0)), [{ env: "pr-12", ok: true, ms: 3, version: "pr-12-x" }])) : new Error("timeout")),
+      [AGENT]: () =>
+        agentUp
+          ? Response.json(snapshot(seconds(minute(0)), [{ env: "pr-12", ok: true, ms: 3, version: "pr-12-x" }]))
+          : new Error("timeout"),
     });
     await runChecks(env, minute(0), fetcher);
     agentUp = false;
@@ -334,7 +375,8 @@ describe("runChecks", () => {
   it("counts a redirect to the Access login as a failed check", async () => {
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
-      [STAGE]: () => new Response(null, { status: 302, headers: { Location: "https://candlestack.cloudflareaccess.com/" } }),
+      [STAGE]: () =>
+        new Response(null, { status: 302, headers: { Location: "https://candlestack.cloudflareaccess.com/" } }),
       [AGENT]: () => Response.json(snapshot(seconds(minute(0)))),
     });
     await runChecks(env, minute(0), fetcher);

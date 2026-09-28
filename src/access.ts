@@ -66,8 +66,7 @@ export async function verifyJwt(token: string, options: VerifyOptions): Promise<
 
   return {
     email: typeof claims.email === "string" && claims.email ? claims.email : undefined,
-    serviceToken:
-      typeof claims.common_name === "string" && claims.common_name ? claims.common_name : undefined,
+    serviceToken: typeof claims.common_name === "string" && claims.common_name ? claims.common_name : undefined,
   };
 }
 
@@ -86,13 +85,9 @@ async function fetchKeys(domain: string, fetcher: typeof fetch): Promise<Map<str
   const { keys } = await response.json<{ keys: (JsonWebKey & { kid: string })[] }>();
   const imported = await Promise.all(
     keys.map(async (jwk) => {
-      const key = await crypto.subtle.importKey(
-        "jwk",
-        jwk,
-        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-        false,
-        ["verify"],
-      );
+      const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
+        "verify",
+      ]);
       return [jwk.kid, key] as const;
     }),
   );
