@@ -6,7 +6,10 @@ const ISSUER = "https://candlestack.cloudflareaccess.com";
 const NOW = 1_790_000_000;
 
 const base64url = (bytes: Uint8Array) =>
-  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 const encode = (value: unknown) => base64url(new TextEncoder().encode(JSON.stringify(value)));
 
 let signing: CryptoKeyPair;

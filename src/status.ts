@@ -150,12 +150,17 @@ export async function status(db: D1Database, now: number): Promise<Status> {
   const dayRows = daily!.results as DayRow[];
   const outageRows = outages!.results as (Outage & { target: string })[];
   const environments = ["prod", "stage"].map((id) => {
-    const list = days(dayRows.filter((r) => r.target === id), today);
+    const list = days(
+      dayRows.filter((r) => r.target === id),
+      today,
+    );
     return {
       ...targetStatus(id, byId.get(id)),
       uptime30: uptime(list),
       days: list,
-      outages: outageRows.filter((o) => o.target === id).map(({ started, ended, detail }) => ({ started, ended, detail })),
+      outages: outageRows
+        .filter((o) => o.target === id)
+        .map(({ started, ended, detail }) => ({ started, ended, detail })),
     };
   });
   const previews = [...byId.keys()]
@@ -175,9 +180,7 @@ export async function status(db: D1Database, now: number): Promise<Status> {
   const dayAgo = hours.get(hourNow - 24);
 
   const vm = byId.get("vm");
-  const checkedAt = [byId.get("prod")?.checked_at, byId.get("stage")?.checked_at].filter(
-    (t): t is number => t != null,
-  );
+  const checkedAt = [byId.get("prod")?.checked_at, byId.get("stage")?.checked_at].filter((t): t is number => t != null);
 
   return {
     now,

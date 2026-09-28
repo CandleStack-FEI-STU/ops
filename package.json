@@ -7,10 +7,12 @@
     "types": "wrangler types",
     "check": "wrangler types --check && tsc --noEmit",
     "test": "vitest run",
-    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "1.2.7",
+    "prettier": "3.9.9",
     "typescript": "7.0.2",
     "vitest": "4.1.11",
     "wrangler": "4.140.0"
