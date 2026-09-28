@@ -44,9 +44,9 @@ outages. Days and times on the page are Bratislava time.
 | *Server rebooted* | the server's boot time moved forward |
 | *Preview pr-12 started*, *… removed* | a `pr-<N>` environment appears or goes |
 
-The main container of an environment is the compose service `backend`, or `app` where the
-placeholder still runs (prod until its next release); when both run, `backend` counts.
-The frontend and Redis containers cause no events.
+The main container of an environment is the compose service `backend`; the frontend and Redis
+containers cause no events. Prod runs `backend` too since v0.2.0; `app` is the placeholder it ran
+before, and the Worker still falls back to it for an environment without `backend`.
 
 ## Agent contract
 
@@ -60,8 +60,8 @@ nothing and holds no secrets. `GET https://vm.candlestack.tech/api/snapshot` ret
   "sampled_at": 1790266811,
   "host": { "label": "AWS t3.small · eu-north-1", "cpus": 2, "uptime": 71018.7, "cpu": 3.8, "load": 0.25,
             "mem_used": 715157504, "mem_total": 2004209664, "disk_used": 4237748736, "disk_total": 25821052928 },
-  "containers": [{ "name": "app", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664,
-                   "created": 1790258400, "started": 1790258400, "version": "v0.1.0" }],
+  "containers": [{ "name": "backend", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664,
+                   "created": 1790258400, "started": 1790258400, "version": "v0.4.0" }],
   "previews": [{ "env": "pr-5", "ok": true, "ms": 2, "version": "pr-5-<commit sha>" }]
 }
 ```
@@ -101,6 +101,18 @@ npm ci
 npm test          # Vitest inside the Workers runtime, with a local D1
 npm run check     # generated types are current, TypeScript
 ```
+
+To run it locally, put `ACCESS_CLIENT_ID` and `ACCESS_CLIENT_SECRET` in `.dev.vars` (any values;
+git ignores the file), then:
+
+```sh
+npx wrangler d1 migrations apply DB --local   # once: the tables in the local D1
+npm run dev                                   # wrangler dev on http://localhost:8787
+curl 'http://localhost:8787/__scheduled'      # run the checks once, like the cron
+```
+
+With made-up values only the prod check passes: stage and the agent need the real service token.
+The page answers 403 locally, as no Access JWT comes with the request.
 
 After changing `wrangler.jsonc`, run `npm run types` and commit `worker-configuration.d.ts`.
 Schema changes are new files in `migrations/`; the deploy applies them before the new code.
