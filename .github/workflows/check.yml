@@ -7,12 +7,13 @@ permissions:
   contents: read
 
 jobs:
-  # Always the first job: no AI attribution in commits or the pull request.
+  # No AI attribution in commits or the pull request. A required check of its own, which
+  # `check` does not wait for: editing the pull request's title or description re-runs only
+  # this job (no-ai-signs-edited.yml), so `check` must already have run.
   no-ai-signs:
     uses: CandleStack-FEI-STU/.github/.github/workflows/no-ai-signs.yml@main
 
   check:
-    needs: no-ai-signs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

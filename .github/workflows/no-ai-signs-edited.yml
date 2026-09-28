@@ -1,0 +1,21 @@
+name: No AI signs (edited)
+
+# no-ai-signs in check.yml also checks the pull request's title and description, but editing
+# them does not start that workflow again. This re-runs only that check on an edit, under the
+# same job name, so the required check `no-ai-signs / No AI signs` follows the current text
+# while `check` keeps its result.
+on:
+  pull_request:
+    types: [edited]
+
+permissions:
+  contents: read
+
+# A newer edit replaces the check of an older one.
+concurrency:
+  group: no-ai-signs-edited-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  no-ai-signs:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/no-ai-signs.yml@main
