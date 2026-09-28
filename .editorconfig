@@ -1,0 +1,28 @@
+# Editor settings for the whole repository (https://editorconfig.org).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Two trailing spaces are a line break in Markdown.
+trim_trailing_whitespace = false
+
+# pyproject.toml as uv writes it (uv add), and the Dockerfiles' continuation lines.
+[{*.py,*.toml,Dockerfile}]
+indent_style = space
+indent_size = 4
+
+[{*.yaml,*.yml,*.json,*.md,*.sh,*.html,*.css,*.js,infra/vm/candlestack-deploy}]
+indent_style = space
+indent_size = 2
+
+[Caddyfile]
+indent_style = tab
+
+# Written by wrangler types and compared by npm run check, so it stays as generated.
+[worker-configuration.d.ts]
+trim_trailing_whitespace = false

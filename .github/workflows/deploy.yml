@@ -39,6 +39,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run lint
       - run: npm test
 
       - name: Apply database migrations

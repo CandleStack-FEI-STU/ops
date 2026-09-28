@@ -22,5 +22,6 @@ Before every push:
 ```sh
 npm ci
 npm run check   # generated types are current, TypeScript
+npm run lint    # oxlint, Prettier and knip; npm run format fixes the formatting
 npm test        # Vitest inside the Workers runtime, with a local D1
 ```

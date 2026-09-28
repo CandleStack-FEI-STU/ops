@@ -3,6 +3,8 @@ import { parseSnapshot } from "../src/snapshot";
 // A real response of infra/agent/agent.py (candlestack repo), with example values.
 import fixture from "./fixtures/agent-snapshot.json";
 
+// The tests write mistyped values on purpose, as a broken agent would send them.
+// oxlint-disable-next-line typescript/no-explicit-any
 const copy = () => structuredClone(fixture) as Record<string, any>;
 
 describe("parseSnapshot (agent contract, schema 1)", () => {

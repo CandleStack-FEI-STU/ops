@@ -62,7 +62,7 @@ export function localDay(ts: number): number {
     .format(new Date(ts * 1000))
     .split("-")
     .map(Number);
-  return Date.UTC(year!, month! - 1, day!) / 86_400_000;
+  return Date.UTC(year!, month! - 1, day) / 86_400_000;
 }
 
 async function getJson(
