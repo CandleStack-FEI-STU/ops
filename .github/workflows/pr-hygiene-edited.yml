@@ -1,0 +1,22 @@
+name: PR hygiene (edited)
+
+# pr-hygiene in check.yml checks the pull request's title, but editing it does not start that
+# workflow again. This re-runs only that check on an edit, under the same job name, so the
+# required check `pr-hygiene / Title and branch` follows the current title while `check` keeps
+# its result. Its own concurrency group: an edit never cancels a running check.
+on:
+  pull_request:
+    types: [edited]
+
+permissions: {}
+
+# A newer edit replaces the check of an older one.
+concurrency:
+  group: pr-hygiene-edited-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-hygiene:
+    uses: CandleStack-FEI-STU/.github/.github/workflows/pr-hygiene.yml@main
+    permissions:
+      pull-requests: read
