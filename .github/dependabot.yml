@@ -11,6 +11,10 @@ updates:
       npm:
         patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      # @cloudflare/vitest-plugin peers on vitest ^4; drop this once it supports vitest 5.
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
 
   # The actions the workflows use, pinned to commit SHAs.
   - package-ecosystem: github-actions
