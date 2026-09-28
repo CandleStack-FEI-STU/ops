@@ -9,3 +9,9 @@ test/fixtures/
 
 # Prose, not code: Markdown keeps its hand-written tables and diagrams.
 *.md
+
+# The git hooks and their configs, as in the other repositories of the organization
+# (`uvx pre-commit autoupdate --freeze` writes .pre-commit-config.yaml).
+.pre-commit-config.yaml
+.markdownlint-cli2.jsonc
+.editorconfig-checker.json

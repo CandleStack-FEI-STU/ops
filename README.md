@@ -6,7 +6,7 @@ Uptime checks and the status page of CandleStack: https://ops.candlestack.tech
 It runs on Cloudflare, not on the CandleStack server, so it keeps working when the server
 is down and records how long the outage lasted.
 
-```
+```text
 Cloudflare cron, every minute ──► app.candlestack.tech/api/health        prod, public, as users see it
           (this Worker)       ──► stage.candlestack.tech/api/health      stage, through Access
                               ──► vm.candlestack.tech/api/snapshot       server agent, through Access
@@ -101,6 +101,8 @@ npm ci
 npm test          # Vitest inside the Workers runtime, with a local D1
 npm run check     # generated types are current, TypeScript
 npm run lint      # oxlint, Prettier and knip; npm run format fixes the formatting
+uvx pre-commit install          # once: the git hooks (.pre-commit-config.yaml) on every commit
+uvx pre-commit run --all-files  # the same hooks on every file, as CI's Pre-commit job
 ```
 
 To run it locally, put `ACCESS_CLIENT_ID` and `ACCESS_CLIENT_SECRET` in `.dev.vars` (any values;

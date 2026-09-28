@@ -42,3 +42,20 @@ jobs:
       - run: npm test
       # Bundles the Worker exactly like a deploy, without uploading it.
       - run: npx wrangler deploy --dry-run --outdir dist
+
+  # The pre-commit hooks (.pre-commit-config.yaml) on every file: formatting, secrets, typos,
+  # comments, Markdown, and actionlint and zizmor on the workflows.
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: uvx pre-commit run --all-files --show-diff-on-failure

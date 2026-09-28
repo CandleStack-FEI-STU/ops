@@ -1,0 +1,10 @@
+# gitleaks (pre-commit, `gitleaks dir`): the default rules, minus a known false positive.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "ACCESS_AUD, the Access application's audience tag: public, not a secret"
+paths = [
+  '''^wrangler\.jsonc$''',
+  '''^worker-configuration\.d\.ts$''',
+]
