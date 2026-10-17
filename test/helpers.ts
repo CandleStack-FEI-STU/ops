@@ -14,13 +14,12 @@ export async function resetDb() {
 
 export function snapshot(
   sampledAt: number,
-  previews: Snapshot["previews"] = [],
   containers: Snapshot["containers"] = [
     { name: "app", env: "prod", state: "running", up: "2 hours", cpu: 0.1, mem: 12_000_000 },
   ],
 ): Snapshot {
   return {
-    schema: 1,
+    schema: 2,
     sampled_at: sampledAt,
     host: {
       label: "AWS t3.small · eu-north-1",
@@ -34,7 +33,6 @@ export function snapshot(
       disk_total: 25_000_000_000,
     },
     containers,
-    previews,
   };
 }
 

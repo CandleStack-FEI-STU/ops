@@ -4,7 +4,7 @@
 // Everything shown on the page is derived from these checks: nobody fills anything in.
 
 import { parseSnapshot, type Container, type Snapshot } from "./snapshot";
-import { formatDuration, isPreview, shortVersion, targetName } from "./targets";
+import { formatDuration, shortVersion, targetName } from "./targets";
 
 export const INTERVAL = 60;
 export const RETENTION_DAYS = 35;
@@ -43,7 +43,7 @@ export interface TargetState {
 export interface Event {
   ts: number;
   target: string;
-  source: "health check" | "deploy" | "restart" | "server" | "preview";
+  source: "health check" | "deploy" | "restart" | "server";
   message: string;
 }
 
@@ -144,8 +144,7 @@ export interface Transition {
 export function transition(prev: TargetState | undefined, result: CheckResult, ts: number): Transition {
   const name = targetName(result.target);
   const events: Event[] = [];
-  const event = (message: string, source: Event["source"] = "health check") =>
-    events.push({ ts, target: result.target, source, message });
+  const event = (message: string) => events.push({ ts, target: result.target, source: "health check", message });
 
   const next: TargetState = {
     id: result.target,
@@ -159,8 +158,6 @@ export function transition(prev: TargetState | undefined, result: CheckResult, t
   };
   let outage: Transition["outage"] = null;
   let down = 0;
-
-  if (!prev && isPreview(result.target)) event(`${name} started`, "preview");
 
   if (result.ok) {
     if (prev?.down_since != null) {
@@ -292,17 +289,6 @@ export async function record(
     }
   }
 
-  // Previews come from the agent, so they are only known to be gone when it answered.
-  if (snapshot) {
-    const running = new Set(snapshot.previews.map((p) => p.env));
-    for (const id of prev.keys()) {
-      if (isPreview(id) && !running.has(id)) {
-        events.push({ ts, target: id, source: "preview", message: `${targetName(id)} removed` });
-        statements.push(db.prepare("DELETE FROM targets WHERE id = ?").bind(id));
-      }
-    }
-  }
-
   const insertEvent = db.prepare("INSERT INTO events (ts, target, source, message) VALUES (?, ?, ?, ?)");
   for (const e of events) statements.push(insertEvent.bind(e.ts, e.target, e.source, e.message));
 
@@ -354,12 +340,5 @@ export async function runChecks(env: Env, scheduledTime: number, fetcher: Fetche
     checkHealth("stage", `${env.STAGE_URL}/api/health`, access, fetcher),
     checkAgent(`${env.AGENT_URL}/api/snapshot`, access, ts, fetcher),
   ]);
-  const previews: CheckResult[] = (agent.snapshot?.previews ?? []).map((p) => ({
-    target: p.env,
-    ok: p.ok,
-    ms: p.ms,
-    version: p.version,
-    detail: p.ok ? null : "unhealthy",
-  }));
-  return record(env.DB, ts, [prod, stage, agent.result, ...previews], agent.snapshot);
+  return record(env.DB, ts, [prod, stage, agent.result], agent.snapshot);
 }

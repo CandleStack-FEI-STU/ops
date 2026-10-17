@@ -92,12 +92,6 @@ describe("transition", () => {
     const { next, events } = transition(state({ id: "stage", version: "main-1" }), ok("stage", "main-2"), 1000);
     expect([next.version, events]).toEqual(["main-2", []]);
   });
-
-  it("reports a new preview, even when its first check fails", () => {
-    expect(transition(undefined, bad("pr-12", "unhealthy"), 1000).events.map((e) => e.message)).toEqual([
-      "Preview pr-12 started",
-    ]);
-  });
 });
 
 describe("localDay", () => {
@@ -111,7 +105,7 @@ describe("localDay", () => {
 
 describe("snapshotEvents", () => {
   const at = (containers: Container[], sampledAt = 5000, uptime = 4000) => {
-    const s = snapshot(sampledAt, [], containers);
+    const s = snapshot(sampledAt, containers);
     s.host.uptime = uptime;
     return s;
   };
@@ -288,7 +282,7 @@ describe("runChecks", () => {
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
       [STAGE]: healthy("main-abc"),
-      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), [], [stage])),
+      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), [stage])),
     });
     await runChecks(env, minute(0), fetcher);
     stage = { ...stage, created: seconds(minute(1)) - 5, started: seconds(minute(1)) - 5 };
@@ -307,7 +301,7 @@ describe("runChecks", () => {
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
       [STAGE]: healthy("main-abc"),
-      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), [], [prod, stage])),
+      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), [prod, stage])),
     });
     await runChecks(env, minute(0), fetcher);
     const deployed = seconds(minute(1)) - 5;
@@ -322,10 +316,7 @@ describe("runChecks", () => {
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
       [STAGE]: healthy("main-abc"),
-      [AGENT]: () =>
-        agentUp
-          ? Response.json(snapshot(seconds(minute(0)), [{ env: "pr-12", ok: true, ms: 3, version: "pr-12-x" }]))
-          : new Error("timeout"),
+      [AGENT]: () => (agentUp ? Response.json(snapshot(seconds(minute(0)))) : new Error("timeout")),
     });
     await runChecks(env, minute(0), fetcher);
     agentUp = false;
@@ -336,8 +327,6 @@ describe("runChecks", () => {
     const s = await status(env.DB, seconds(minute(2)));
     expect(s.server).toMatchObject({ state: "down", detail: "unreachable", fetched_at: seconds(minute(0)) });
     expect(s.server.host?.cpus).toBe(2);
-    // Without the agent nobody knows whether previews are gone, so they stay as they were.
-    expect(s.previews.map((p) => [p.env, p.state])).toEqual([["pr-12", "up"]]);
     // The server has no strip: its outages only become events.
     expect(s.environments.flatMap((e) => e.outages)).toEqual([]);
   });
@@ -359,17 +348,17 @@ describe("runChecks", () => {
     expect(s.server).toMatchObject({ state: "down", detail: "unexpected response" });
   });
 
-  it("follows previews as they start and go", async () => {
-    let previews = [{ env: "pr-12", ok: true, ms: 3, version: "pr-12-x" }];
+  it("still reads an agent on schema 1 and ignores its previews", async () => {
+    const previews = [{ env: "pr-12", ok: false, ms: null, version: null }];
     const { fetcher } = fakeFetch({
       [PROD]: healthy("v0.1.0"),
       [STAGE]: healthy("main-abc"),
-      [AGENT]: () => Response.json(snapshot(seconds(minute(0)), previews)),
+      [AGENT]: () => Response.json({ ...snapshot(seconds(minute(0))), schema: 1, previews }),
     });
-    expect((await runChecks(env, minute(0), fetcher)).map((e) => e.message)).toEqual(["Preview pr-12 started"]);
-    previews = [];
-    expect((await runChecks(env, minute(1), fetcher)).map((e) => e.message)).toEqual(["Preview pr-12 removed"]);
-    expect((await status(env.DB, seconds(minute(1)))).previews).toEqual([]);
+    expect(await runChecks(env, minute(0), fetcher)).toEqual([]);
+    expect((await status(env.DB, seconds(minute(0)))).server).toMatchObject({ state: "up", detail: null });
+    const { results } = await env.DB.prepare("SELECT id FROM targets ORDER BY id").all();
+    expect(results.map((r) => r.id)).toEqual(["prod", "stage", "vm"]);
   });
 
   it("counts a redirect to the Access login as a failed check", async () => {

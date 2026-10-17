@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "sampled_at": 1790266811,
   "host": {
     "label": "AWS t3.small · eu-north-1",
@@ -19,17 +19,6 @@
     {"name":  "redis", "env":  "stage", "state":  "running", "up":  "26 minutes", "cpu":  0.2, "mem":  4194304, "created":  1790265250, "started":  1790265250, "version":  null},
     {"name":  "caddy", "env":  "edge", "state":  "running", "up":  "3 hours", "cpu":  0.2, "mem":  21809856, "created":  1790256000, "started":  1790256000, "version":  null},
     {"name":  "agent", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  0.3, "mem":  19697664, "created":  1790265251, "started":  1790265251, "version":  null},
-    {"name":  "socket-proxy", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  null, "mem":  null, "created":  1790265251, "started":  1790265251, "version":  null},
-    {"name":  "backend", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.3, "mem":  90177536, "created":  1790266571, "started":  1790266572, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-    {"name":  "frontend", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.0, "mem":  11046592, "created":  1790266571, "started":  1790266572, "version":  "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-    {"name":  "redis", "env":  "pr-5", "state":  "running", "up":  "4 minutes", "cpu":  0.1, "mem":  3145728, "created":  1790266570, "started":  1790266570, "version":  null}
-  ],
-  "previews": [
-    {
-      "env": "pr-5",
-      "ok": true,
-      "ms": 2,
-      "version": "pr-5-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-    }
+    {"name":  "socket-proxy", "env":  "agent", "state":  "running", "up":  "26 minutes", "cpu":  null, "mem":  null, "created":  1790265251, "started":  1790265251, "version":  null}
   ]
 }
