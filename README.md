@@ -20,7 +20,6 @@ Cloudflare cron, every minute ──► app.candlestack.tech/api/health        p
 | Section | Source |
 | --- | --- |
 | Production, Staging | a health check from outside every minute; uptime and a strip of the last 30 days, one bar per day with its outages on hover (tap on a phone) |
-| PR previews | the agent checks each `pr-<N>` environment on the server's internal network |
 | Server | CPU, memory and disk from the agent, with 24-hour charts |
 | Containers | the agent, through a read-only Docker API proxy |
 | Events | automatic, nobody writes them: see below |
@@ -42,7 +41,6 @@ outages. Days and times on the page are Bratislava time.
 | *Staging redeployed main · 1837bac* | a new main container with the same version |
 | *Staging restarted* | the main container started again (a crash or a manual restart) |
 | *Server rebooted* | the server's boot time moved forward |
-| *Preview pr-12 started*, *… removed* | a `pr-<N>` environment appears or goes |
 
 The main container of an environment is the compose service `backend`; the frontend and Redis
 containers cause no events. Prod runs `backend` too since v0.2.0; `app` is the placeholder it ran
@@ -56,13 +54,12 @@ nothing and holds no secrets. `GET https://vm.candlestack.tech/api/snapshot` ret
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "sampled_at": 1790266811,
   "host": { "label": "AWS t3.small · eu-north-1", "cpus": 2, "uptime": 71018.7, "cpu": 3.8, "load": 0.25,
             "mem_used": 715157504, "mem_total": 2004209664, "disk_used": 4237748736, "disk_total": 25821052928 },
   "containers": [{ "name": "backend", "env": "prod", "state": "running", "up": "3 hours", "cpu": 0.1, "mem": 13697664,
-                   "created": 1790258400, "started": 1790258400, "version": "v0.4.0" }],
-  "previews": [{ "env": "pr-5", "ok": true, "ms": 2, "version": "pr-5-<commit sha>" }]
+                   "created": 1790258400, "started": 1790258400, "version": "v0.4.0" }]
 }
 ```
 
@@ -70,8 +67,10 @@ nothing and holds no secrets. `GET https://vm.candlestack.tech/api/snapshot` ret
 (the `candlestack.version` label) of the main container feed the deploy, redeploy and restart
 events; an agent without them still works, without those events. A response that does not match
 (`src/snapshot.ts`) or a sample older than three minutes counts as a failed check.
-A change to the format needs a new `schema` number and a change in both repositories;
-`test/fixtures/agent-snapshot.json` is a real response and pins the contract in the tests.
+Schema 1 is the same plus a `previews` list, which the Worker ignores, so an agent that still
+sends it keeps working. A change to the format needs a new `schema` number and a change in both
+repositories; `test/fixtures/agent-snapshot.json` is a real response and pins the contract in the
+tests.
 
 ## Access
 

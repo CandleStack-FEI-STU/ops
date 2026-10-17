@@ -7,9 +7,14 @@ import fixture from "./fixtures/agent-snapshot.json";
 // oxlint-disable-next-line typescript/no-explicit-any
 const copy = () => structuredClone(fixture) as Record<string, any>;
 
-describe("parseSnapshot (agent contract, schema 1)", () => {
+describe("parseSnapshot (agent contract, schema 2)", () => {
   it("accepts what the agent sends", () => {
     expect(parseSnapshot(copy())).toEqual(fixture);
+  });
+
+  it("accepts an agent on schema 1, which also sends previews", () => {
+    const previews = [{ env: "pr-5", ok: true, ms: 2, version: null }];
+    expect(parseSnapshot({ ...copy(), schema: 1, previews })).toBeDefined();
   });
 
   it("accepts the agent's first sample, before CPU can be measured", () => {
@@ -35,7 +40,7 @@ describe("parseSnapshot (agent contract, schema 1)", () => {
   });
 
   it("rejects another schema version", () => {
-    expect(parseSnapshot({ ...copy(), schema: 2 })).toBeUndefined();
+    expect(parseSnapshot({ ...copy(), schema: 3 })).toBeUndefined();
   });
 
   it("rejects missing or mistyped fields", () => {
@@ -48,12 +53,6 @@ describe("parseSnapshot (agent contract, schema 1)", () => {
     for (const body of [noHost, textCpu, badContainer, null, [], "ok"]) {
       expect(parseSnapshot(body)).toBeUndefined();
     }
-  });
-
-  it("only takes previews named pr-<N>", () => {
-    const body = copy();
-    body.previews[0].env = "prod";
-    expect(parseSnapshot(body)).toBeUndefined();
   });
 
   it("refuses oversized lists", () => {

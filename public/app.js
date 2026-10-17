@@ -36,7 +36,7 @@ const dayMonth = (ts) =>
   new Date(ts * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", timeZone: TZ }).replace("/", ".");
 const dateOf = (ts) => new Date(ts * 1000).toLocaleDateString("en-CA", { timeZone: TZ });
 const when = (ts) => dayMonth(ts) + " · " + time(ts);
-// "main-<sha>" and "pr-9-<sha>" read better as "main · abc1234".
+// "main-<sha>" reads better as "main · abc1234".
 const version = (v) => {
   if (!v) return null;
   const m = String(v).match(/^(.*)-([0-9a-f]{40})$/);
@@ -146,9 +146,8 @@ document.addEventListener("click", (event) => {
 function headline(s) {
   const [prod, stage] = s.environments;
   if (s.last_check == null) return "Collecting the first checks";
-  const down = [stage, ...s.previews].filter((e) => e.state === "down").map((e) => e.name.toLowerCase());
   const problems = [];
-  if (down.length) problems.push(`${down.join(" and ")} ${down.length > 1 ? "are" : "is"} down`);
+  if (stage.state === "down") problems.push("staging is down");
   const serverDown = s.server.state === "down";
   // Prod unreachable from outside and the agent silent: the whole machine (or its tunnel) is gone.
   if (prod.state === "down" && serverDown) return "The server is not reachable";
@@ -187,25 +186,6 @@ function serverHtml(v, now) {
   return html;
 }
 
-function previewsRow(s) {
-  // Previews are reported by the agent: without it, the list is only the last known one.
-  const pv = s.previews,
-    known = s.server.state === "up";
-  const pvState = !known
-    ? "unknown"
-    : pv.some((p) => p.state === "down")
-      ? "down"
-      : pv.some((p) => p.state === "warn")
-        ? "warn"
-        : "up";
-  const pvText =
-    (pv.length ? `${pv.length} running` : "None running") +
-    (known || !s.server.fetched_at ? "" : ` · last known ${time(s.server.fetched_at)}`);
-  return `<div class="row"><div class="name"><b>PR previews</b><small>pr-&lt;N&gt;-preview.candlestack.tech</small></div>
-    <div class="svc-top">${stateHtml(pvState, pvText)}
-    <span class="facts mono">${pv.map((p) => `<a href="https://${esc(p.host)}">${esc(p.env)}</a>`).join("")}</span></div></div>`;
-}
-
 let lastEnvs = "";
 
 function render(s) {
@@ -214,10 +194,7 @@ function render(s) {
   $("headline").textContent = headline(s);
   const late = s.last_check != null && now - s.last_check > s.interval * 3;
   const warn =
-    late ||
-    [stage, ...s.previews].some((e) => e.state === "down" || e.state === "warn") ||
-    prod.state === "warn" ||
-    s.server.state !== "up";
+    late || stage.state === "down" || stage.state === "warn" || prod.state === "warn" || s.server.state !== "up";
   $("overall-dot").className =
     "dot " + (s.last_check == null ? "unknown" : prod.state === "down" ? "down" : warn ? "warn" : "up");
   $("overall-text").textContent =
@@ -226,7 +203,7 @@ function render(s) {
       : `${late ? "Checks are late" : "Checked every minute from Cloudflare"} · last check ${ago(now - s.last_check)}`;
 
   // Rebuilt only when the content changed (at most once a minute), so a refresh does not close an open tooltip.
-  const envs = envRow(prod, now) + envRow(stage, now) + previewsRow(s);
+  const envs = envRow(prod, now) + envRow(stage, now);
   if (envs !== lastEnvs) $("envs").innerHTML = lastEnvs = envs;
 
   $("sources").innerHTML = s.sources?.length

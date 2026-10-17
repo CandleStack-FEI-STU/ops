@@ -2,7 +2,7 @@
 
 import { INTERVAL, localDay, type Event, type TargetState } from "./checks";
 import type { Container, HostMetrics, Snapshot } from "./snapshot";
-import { isPreview, previewNumber, targetName } from "./targets";
+import { targetName } from "./targets";
 
 type State = "up" | "warn" | "down" | "unknown";
 
@@ -47,7 +47,6 @@ export interface Status {
   /** When the cron last ran; null before the first run. */
   last_check: number | null;
   environments: EnvironmentStatus[];
-  previews: TargetStatus[];
   /** Filled once the app exposes /api/health/sources. */
   sources: null;
   server: {
@@ -81,7 +80,9 @@ interface DayRow {
   down: number;
 }
 
-const HOSTS: Record<string, string> = {
+type Environment = "prod" | "stage";
+
+const HOSTS: Record<Environment, string> = {
   prod: "app.candlestack.tech",
   stage: "stage.candlestack.tech",
 };
@@ -92,11 +93,11 @@ function stateOf(row: TargetState | undefined): State {
   return row.fails >= 2 ? "down" : "warn";
 }
 
-function targetStatus(id: string, row: TargetState | undefined): TargetStatus {
+function targetStatus(id: Environment, row: TargetState | undefined): TargetStatus {
   return {
     env: id,
     name: targetName(id),
-    host: HOSTS[id] ?? `${id}-preview.candlestack.tech`,
+    host: HOSTS[id],
     state: stateOf(row),
     ms: row?.ms ?? null,
     version: row?.version ?? null,
@@ -149,7 +150,7 @@ export async function status(db: D1Database, now: number): Promise<Status> {
   const byId = new Map((targets!.results as TargetState[]).map((row) => [row.id, row]));
   const dayRows = daily!.results as DayRow[];
   const outageRows = outages!.results as (Outage & { target: string })[];
-  const environments = ["prod", "stage"].map((id) => {
+  const environments = (["prod", "stage"] as const).map((id) => {
     const list = days(
       dayRows.filter((r) => r.target === id),
       today,
@@ -163,10 +164,6 @@ export async function status(db: D1Database, now: number): Promise<Status> {
         .map(({ started, ended, detail }) => ({ started, ended, detail })),
     };
   });
-  const previews = [...byId.keys()]
-    .filter(isPreview)
-    .sort((a, b) => previewNumber(a) - previewNumber(b))
-    .map((id) => targetStatus(id, byId.get(id)));
 
   const snap = snapshot!.results[0] as { fetched_at: number; body: string } | undefined;
   const latest = snap ? (JSON.parse(snap.body) as Snapshot) : undefined;
@@ -187,7 +184,6 @@ export async function status(db: D1Database, now: number): Promise<Status> {
     interval: INTERVAL,
     last_check: checkedAt.length ? Math.max(...checkedAt) : null,
     environments,
-    previews,
     sources: null,
     server: {
       state: stateOf(vm),

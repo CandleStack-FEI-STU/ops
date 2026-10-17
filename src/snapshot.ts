@@ -1,7 +1,5 @@
 // The contract with the server agent (candlestack repo, infra/agent/agent.py).
-// GET <AGENT_URL>/api/snapshot returns schema 1; see README.md, "Agent contract".
-
-import { PREVIEW_RE } from "./targets";
+// GET <AGENT_URL>/api/snapshot returns schema 2; see README.md, "Agent contract".
 
 export interface HostMetrics {
   label: string;
@@ -32,20 +30,13 @@ export interface Container {
   version?: string | null;
 }
 
-export interface PreviewCheck {
-  env: string;
-  ok: boolean;
-  ms: number | null;
-  version: string | null;
-}
-
 export interface Snapshot {
-  schema: 1;
+  /** 1 is 2 plus a `previews` list, which is ignored, so an agent on either schema works. */
+  schema: 1 | 2;
   /** Unix seconds when the agent took the sample. */
   sampled_at: number;
   host: HostMetrics;
   containers: Container[];
-  previews: PreviewCheck[];
 }
 
 const MAX_ITEMS = 100;
@@ -84,17 +75,6 @@ function isContainer(v: unknown): v is Container {
   );
 }
 
-function isPreviewCheck(v: unknown): v is PreviewCheck {
-  return (
-    isObject(v) &&
-    isText(v.env) &&
-    PREVIEW_RE.test(v.env) &&
-    typeof v.ok === "boolean" &&
-    isNumberOrNull(v.ms) &&
-    isTextOrNull(v.version)
-  );
-}
-
 const isList = <T>(v: unknown, item: (x: unknown) => x is T): v is T[] =>
   Array.isArray(v) && v.length <= MAX_ITEMS && v.every(item);
 
@@ -102,11 +82,10 @@ const isList = <T>(v: unknown, item: (x: unknown) => x is T): v is T[] =>
 export function parseSnapshot(body: unknown): Snapshot | undefined {
   if (
     isObject(body) &&
-    body.schema === 1 &&
+    (body.schema === 1 || body.schema === 2) &&
     isNumber(body.sampled_at) &&
     isHost(body.host) &&
-    isList(body.containers, isContainer) &&
-    isList(body.previews, isPreviewCheck)
+    isList(body.containers, isContainer)
   ) {
     return body as unknown as Snapshot;
   }
